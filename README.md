@@ -1,36 +1,191 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Healthcare Translation Web App
 
-## Getting Started
+A real-time, multilingual translation application designed for healthcare communication between patients and providers. Built with Next.js, TypeScript, and Tailwind CSS, featuring voice-to-text, AI-powered translation, and text-to-speech capabilities.
 
-First, run the development server:
+## Features
+
+- 🎤 **Voice-to-Text**: Real-time speech recognition using Web Speech API (Chrome/Edge)
+- 🌐 **AI Translation**: Medical-accurate translations powered by Groq LLM
+- 🔊 **Text-to-Speech**: Audio playback of translated text
+- 📱 **Mobile-First Design**: Responsive interface optimized for all devices
+- 🔒 **Privacy-First**: No data storage, client-side audio processing
+- 🌍 **Multi-Language Support**: 12+ languages with native names
+
+## Tech Stack
+
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS
+- **AI Translation**: Groq API (Llama 3 70B)
+- **Speech**: Web Speech API (STT & TTS)
+- **Deployment**: Vercel
+
+## Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+- Groq API key ([Get one here](https://console.groq.com/))
+
+## Quick Start
+
+### 1. Clone and Install
+
+```bash
+git clone <your-repo-url>
+cd healthcare-translation-app
+npm install
+```
+
+### 2. Environment Setup
+
+Create a `.env.local` file in the root directory:
+
+```bash
+# Required: Your Groq API key
+GROQ_API_KEY=your_actual_groq_api_key_here
+
+# Optional: Default language settings
+NEXT_PUBLIC_DEFAULT_SOURCE_LANG=en
+NEXT_PUBLIC_DEFAULT_TARGET_LANG=es
+```
+
+### 3. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Basic Workflow
 
-## Learn More
+1. **Select Languages**: Choose source and target languages from dropdowns
+2. **Input Text**: Either speak into your microphone or type your message
+3. **Translate**: Click "Translate" to get AI-powered translation
+4. **Listen**: Use "Speak" button to hear translated text aloud
 
-To learn more about Next.js, take a look at the following resources:
+### Voice Input (Chrome/Edge)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Click "Start Recording" and speak clearly
+- Click "Stop Recording" when finished
+- Speech is converted to text in real-time
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Text Input (All Browsers)
 
-## Deploy on Vercel
+- Type directly in the text area
+- Works on all browsers and devices
+- Ideal for longer messages or when voice isn't available
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Browser Support
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Feature | Chrome | Edge | Safari | Firefox |
+|---------|--------|------|--------|---------|
+| Voice Input | ✅ | ✅ | ⚠️ (macOS only) | ❌ |
+| Text Input | ✅ | ✅ | ✅ | ✅ |
+| Text-to-Speech | ✅ | ✅ | ✅ | ✅ |
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add environment variables in Vercel dashboard:
+   - `GROQ_API_KEY`: Your Groq API key
+4. Deploy!
+
+### Environment Variables
+
+Ensure these are set in your deployment platform:
+
+- `GROQ_API_KEY`: Required for translation service
+- `NEXT_PUBLIC_DEFAULT_SOURCE_LANG`: Default source language (optional)
+- `NEXT_PUBLIC_DEFAULT_TARGET_LANG`: Default target language (optional)
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js app router
+│   ├── api/              # API routes
+│   │   └── translate/    # Translation endpoint
+│   ├── help/             # Help page
+│   ├── privacy/          # Privacy policy
+│   └── page.tsx          # Main app page
+├── components/            # React components
+│   ├── Header.tsx        # App header
+│   ├── LanguageSelector.tsx # Language dropdowns
+│   ├── TranscriptPane.tsx   # Text input/display
+│   ├── ControlButtons.tsx   # Record/translate buttons
+│   └── ConsentBanner.tsx    # Privacy consent
+├── hooks/                 # Custom React hooks
+│   └── useSpeechRecognition.ts # Speech API wrapper
+└── lib/                   # Utilities
+    └── config.ts         # App configuration
+```
+
+## API Endpoints
+
+### POST /api/translate
+
+Translates text using Groq LLM with medical context.
+
+**Request Body:**
+```json
+{
+  "text": "Hello, I have a headache",
+  "srcLang": "en",
+  "tgtLang": "es"
+}
+```
+
+**Response:**
+```json
+{
+  "translatedText": "Hola, tengo dolor de cabeza",
+  "sourceLanguage": "en",
+  "targetLanguage": "es",
+  "originalText": "Hello, I have a headache"
+}
+```
+
+## Privacy & Security
+
+- **No Data Storage**: Audio, text, and translations are never stored
+- **Client-Side Processing**: Voice recognition happens in your browser
+- **Secure API Calls**: HTTPS-only communication with Groq
+- **No Logging**: Translation requests are processed in memory and discarded
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For issues or questions:
+1. Check the Help page in the app
+2. Review browser compatibility notes
+3. Ensure your Groq API key is valid
+4. Check network connectivity for translation requests
+
+## Roadmap
+
+- [ ] iOS Safari voice input support
+- [ ] Offline translation capabilities
+- [ ] Medical terminology glossary
+- [ ] Conversation history (client-side only)
+- [ ] Additional language models
+- [ ] Accessibility improvements
+
+---
+
+Built with ❤️ for better healthcare communication across language barriers.
