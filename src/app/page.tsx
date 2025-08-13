@@ -1,103 +1,197 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { type LanguageCode, config } from '@/lib/config';
+import { Header } from '@/components/Header';
+import { LanguageSelector } from '@/components/LanguageSelector';
+import { TranscriptPane } from '@/components/TranscriptPane';
+import { ControlButtons } from '@/components/ControlButtons';
+import { ConsentBanner } from '@/components/ConsentBanner';
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
+
+export default function HomePage() {
+  const [sourceLang, setSourceLang] = useState<LanguageCode>(config.languages.defaultSource as LanguageCode);
+  const [targetLang, setTargetLang] = useState<LanguageCode>(config.languages.defaultTarget as LanguageCode);
+  const [originalText, setOriginalText] = useState('');
+  const [translatedText, setTranslatedText] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
+  const [showSpeechError, setShowSpeechError] = useState(false);
+
+  const {
+    isSupported: speechSupported,
+    isRecording,
+    transcript,
+    startRecording,
+    stopRecording,
+    resetTranscript,
+    error: speechError,
+    updateLanguage,
+  } = useSpeechRecognition();
+
+  useEffect(() => {
+    if (speechSupported) {
+      updateLanguage(sourceLang);
+    }
+  }, [sourceLang, speechSupported, updateLanguage]);
+
+  useEffect(() => {
+    setOriginalText(transcript);
+  }, [transcript]);
+
+  useEffect(() => {
+    if (speechError) {
+      setShowSpeechError(true);
+      setTimeout(() => setShowSpeechError(false), 5000);
+    }
+  }, [speechError]);
+
+  const handleLanguageChange = (type: 'source' | 'target', lang: LanguageCode) => {
+    if (type === 'source') {
+      setSourceLang(lang);
+    } else {
+      setTargetLang(lang);
+    }
+    setTranslatedText('');
+  };
+
+  const handleTextChange = (text: string) => {
+    setOriginalText(text);
+    setTranslatedText('');
+  };
+
+  const handleRecordingChange = (recording: boolean) => {
+    if (recording) {
+      if (speechSupported) {
+        startRecording();
+      }
+    } else {
+      if (speechSupported) {
+        stopRecording();
+      }
+    }
+  };
+
+  const handleTranslate = async () => {
+    if (!originalText.trim()) return;
+    
+    setIsTranslating(true);
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: originalText,
+          srcLang: sourceLang,
+          tgtLang: targetLang,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Translation failed');
+      }
+
+      const data = await response.json();
+      setTranslatedText(data.translatedText);
+    } catch (error) {
+      console.error('Translation error:', error);
+      alert(`Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const handleClear = () => {
+    setOriginalText('');
+    setTranslatedText('');
+    resetTranscript();
+  };
+
+  if (!hasConsented) {
+    return <ConsentBanner onConsent={() => setHasConsented(true)} />;
+  }
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="min-h-screen bg-gray-50">
+      <Header />
+      
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        {showSpeechError && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-red-800">{speechError}</span>
+            </div>
+          </div>
+        )}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        <div className="mb-6">
+          <LanguageSelector
+            sourceLang={sourceLang}
+            targetLang={targetLang}
+            onLanguageChange={handleLanguageChange}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <TranscriptPane
+            title="Original Text"
+            language={sourceLang}
+            text={originalText}
+            onTextChange={handleTextChange}
+            placeholder="Speak or type your message here..."
+            isInput={true}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+
+          <TranscriptPane
+            title="Translation"
+            language={targetLang}
+            text={translatedText}
+            onTextChange={() => {}}
+            placeholder="Translation will appear here..."
+            isInput={false}
+            isLoading={isTranslating}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </div>
+
+        <ControlButtons
+          isRecording={isRecording}
+          onRecordingChange={handleRecordingChange}
+          onTranslate={handleTranslate}
+          hasText={!!originalText.trim()}
+          isTranslating={isTranslating}
+        />
+
+        {originalText.trim() && (
+          <div className="mt-4 text-center">
+            <button
+              onClick={handleClear}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Clear All
+            </button>
+          </div>
+        )}
+
+        {!speechSupported && (
+          <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <span className="text-yellow-800">
+                Your browser does not support real-time speech recognition. Please type your message instead.
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
